@@ -9,6 +9,8 @@ const mainStore = create(() => ({
     attack1: false,
     attack2: false,
     attack3: false,
+    runForward: false,
+    runBackward: false,
   },
 }));
 

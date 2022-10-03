@@ -5,6 +5,7 @@ import Tiles from './entities/tiles';
 import Player from './entities/player';
 import useKeyboard from './useKeyboard';
 import mainStore from './store/mainStore';
+import Enemy from './entities/enemy';
 
 const init = () => {
   const canvas = document.getElementById('canvas');
@@ -15,21 +16,22 @@ const init = () => {
   const backGround = new Background(ctx, canvas.width, canvas.height);
   const tiles = new Tiles(ctx, canvas.width, canvas.height);
   const player = new Player(ctx, tiles.cHeight - tiles.sHeight);
-
-  //   window.addEventListener('keydown', (e) => {
-  //     if (e.key === 'a') {
-  //       player.changePlayerState('walk');
-  //     }
-  //   });
-
-  // write hook that return  an animation frame variable and when
-  // resize happen cancel that and then init again the game
+  const enemy = new Enemy(ctx, tiles.cHeight - tiles.sHeight, canvas.width);
 
   const playerState = () => {
     const { actions } = mainStore.getState();
 
     const action = Object.keys(actions).filter((k) => actions[k]);
     if (action.length > 1) {
+      const helperObject = {};
+      Object.keys(actions).forEach((k) => {
+        if (actions[k]) {
+          helperObject[k] = false;
+        }
+      });
+      mainStore.setState((state) => ({
+        actions: { ...state.actions, ...helperObject, idle: true },
+      }));
       player.changePlayerState('idle');
     } else {
       player.changePlayerState(action[0]);
@@ -40,6 +42,8 @@ const init = () => {
     backGround.draw();
     tiles.draw();
     player.draw();
+    enemy.checkDistanceAndMakeDecision(player.x);
+    enemy.draw();
     playerState();
   };
 

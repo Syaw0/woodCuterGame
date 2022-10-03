@@ -10,7 +10,6 @@ const initialingTheWindow = (animationFrame) => {
   setCanvasSize();
   window.addEventListener('resize', () => {
     setCanvasSize();
-    window.removeEventListener('load', setCanvasSize);
     cancelAnimationFrame(animationFrame);
     init();
   });
