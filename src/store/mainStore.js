@@ -12,6 +12,8 @@ const mainStore = create(() => ({
     runForward: false,
     runBackward: false,
   },
+  gameStatus: 'choose',
+  character: 'null',
 }));
 
 export default mainStore;

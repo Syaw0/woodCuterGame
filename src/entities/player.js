@@ -1,33 +1,15 @@
 /* eslint-disable no-unused-expressions */
 import {
-  playerIdleImage,
-  playerJumpImage,
-  playerWalkImage,
-  playerAttack1Image,
-  playerAttack2Image,
-  playerAttack3Image,
-  playerHurtImage,
-  playerRunImage,
-  playerDeathImage,
-
-} from '../assets/images';
-
-const playerImgMap = {
-  idle: playerIdleImage,
-  jump: playerJumpImage,
-  moveForward: playerWalkImage,
-  moveBackward: playerWalkImage,
-  attack1: playerAttack1Image,
-  attack2: playerAttack3Image,
-  attack3: playerAttack2Image,
-  death: playerDeathImage,
-  hurt: playerHurtImage,
-  runForward: playerRunImage,
-  runBackward: playerRunImage,
-};
+  players,
+} from '../assets/players';
+import mainStore from '../store/mainStore';
 
 class Player {
   constructor(ctx, sHeight) {
+    this.health = 100;
+    this.imgMap = players.steamMan;
+    this.takeHeath = 1;
+    this.live = true;
     this.ctx = ctx;
     this.x = 500;
     this.size = 70;
@@ -38,14 +20,23 @@ class Player {
     this.maxTimeOut = 0;
     this.speed = 12;
     this.image = {
-      src: playerIdleImage,
+      src: this.imgMap.idle,
       current: 0,
-      length: playerIdleImage.width / this.size,
+      length: this.imgMap.idle.width / this.size,
       name: 'idle',
     };
   }
 
   draw() {
+    if (this.health < 0) {
+      this.changePlayerState('death');
+      setTimeout(() => {
+        this.live = false;
+        this.image.current = this.image.length - 1;
+        mainStore.setState({ gameStatus: 'choose' });
+      }, 600);
+    }
+
     this.ctx.save();
     this.ctx.translate(this.x, this.sHeight - this.size);
     this.ctx.scale(this.dir ? 1 : -1, 1);
@@ -57,8 +48,6 @@ class Player {
       this.size,
       -20,
       0,
-      //   this.x,
-      //   this.sHeight - this.size,
       this.size,
       this.size,
 
@@ -92,7 +81,7 @@ class Player {
       this.dir ? this.x += 0.6 : this.x -= 0.6;
     }
 
-    if (this.maxTimeOut >= 100) {
+    if (this.maxTimeOut >= 100 && this.live) {
       // console.log(mainStore.getState().actions)
       if (this.image.current === 3) {
         this.image.current = 0;
@@ -106,17 +95,33 @@ class Player {
   }
 
   changePlayerState(newState) {
-    if (playerImgMap[newState] === this.image.src) {
+    if (this.playerState === 'death') {
       return;
     }
-
+    if (this.imgMap[newState] === this.image.src) {
+      return;
+    }
+    if (newState === 'hurt') {
+      this.health -= this.takeHeath;
+    }
     this.playerState = newState;
     this.image = {
-      src: playerImgMap[newState],
-      length: playerImgMap[newState].width / this.size,
+      src: this.imgMap[newState],
+      length: this.imgMap[newState].width / this.size,
       current: 0,
       name: newState,
     };
+  }
+
+  changeImgMap(newImgMap) {
+    this.imgMap = players[newImgMap];
+  }
+
+  reHealth() {
+    this.health = 100;
+    this.live = true;
+    this.playerState = 'idle';
+    this.changePlayerState('idle');
   }
 }
 

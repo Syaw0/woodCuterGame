@@ -2,23 +2,29 @@
 import {
   enemies,
 
-} from '../assets/images';
+} from '../assets/enemis';
 
-const enemyList = ['snake', 'mummy'];
+const enemyList = [
+  { name: 'snake', speed: 0.4 },
+  { name: 'mummy', speed: 0.7 },
+];
 
 const chooseRandomlyAnEnemy = () => {
   const randomNumber = Math.floor(Math.random() * (enemyList.length));
-  return enemies[enemyList[randomNumber]];
+  return enemyList[randomNumber];
 };
 
 const chooseRandomlyAnEnemyDirection = (cWidth) => {
   const randomNumber = Math.floor(Math.random() * 2);
-  return randomNumber === 1 ? -90 : cWidth + 90;
+  const randomDis = Math.floor(Math.random() * 190);
+  return randomNumber === 1 ? -randomDis : cWidth + randomDis;
 };
 
 class Enemy {
-  constructor(ctx, sHeight, cWidth) {
-    this.imgMap = chooseRandomlyAnEnemy();
+  constructor(ctx, sHeight, cWidth, id) {
+    const { name, speed } = chooseRandomlyAnEnemy();
+    this.enemyId = id;
+    this.imgMap = enemies[name];
     this.ctx = ctx;
     this.health = 20;
     this.x = chooseRandomlyAnEnemyDirection(cWidth);
@@ -27,10 +33,14 @@ class Enemy {
     this.sRHeight = sHeight;
     this.enemyState = 'idle';
     this.dir = this.x < 0;
-    this.attackRange = 30;
+    this.attackRange = 10;
     this.maxTimeOut = 0;
-    this.speedMove = 1;
+    this.speedMove = speed;
     this.speedImgFrame = 12;
+    this.live = true;
+    this.attackWaitTime = 76;
+    this.damage = 2;
+    this.attackCount = 0.5;
     this.image = {
       src: this.imgMap.idle,
       current: 0,
@@ -55,6 +65,7 @@ class Enemy {
       this.size,
 
     );
+
     this.ctx.restore();
     this.update();
   }
@@ -69,7 +80,7 @@ class Enemy {
       this.x -= this.speedMove;
     }
 
-    if (this.maxTimeOut >= 100) {
+    if (this.maxTimeOut >= 100 && this.live) {
       if (this.image.current === 3) {
         this.image.current = 0;
       } else {
@@ -81,23 +92,54 @@ class Enemy {
     }
   }
 
-  checkDistanceAndMakeDecision(pX) {
-    if (pX >= this.x) {
-      if (pX - this.attackRange <= this.x) {
-        this.changeEnemyState('attack');
-        return;
+  checkDistanceAndMakeDecision(pX, pL) {
+    if (this.enemyState !== 'hurt' && this.enemyState !== 'death' && this.live && pL) {
+      if (pX >= this.x) {
+        if (pX - this.attackRange <= this.x) {
+          this.controlAttack();
+          return;
+        }
+        this.changeEnemyState('moveForward');
+      } else if (pX < this.x) {
+        if (pX + this.attackRange >= this.x) {
+          this.controlAttack();
+          return;
+        }
+        this.changeEnemyState('moveBackward');
       }
-      this.changeEnemyState('moveForward');
-    } else if (pX < this.x) {
-      if (pX + this.attackRange >= this.x) {
+    } else if (this.enemyState === 'hurt' && this.live) {
+      setTimeout(() => {
+        this.speedImgFrame = 5;
+        this.changeEnemyState('death');
+        setTimeout(() => {
+          this.live = false;
+          this.image.current = this.image.length - 1;
+        }, 1200);
+      }, 2000);
+    } else if (this.enemyState === 'hurt' && !this.live) {
+      this.changeEnemyState('idle');
+    }
+  }
+
+  controlAttack() {
+    if (this.enemyState !== 'death' && this.enemyState !== 'hurt') {
+      if (this.attackCount < this.attackWaitTime) {
         this.changeEnemyState('attack');
-        return;
+        this.speedImgFrame = 15;
+        this.attackCount += 1;
+      } else if (this.attackCount < this.attackWaitTime + 200) {
+        this.speedImgFrame = 12;
+        this.attackCount += 1;
+        this.changeEnemyState('idle');
+      } else {
+        this.speedImgFrame = 12;
+        this.attackCount = 1;
       }
-      this.changeEnemyState('moveBackward');
     }
   }
 
   changeEnemyState(newState) {
+    if (this.enemyState === 'death' || !this.live) { return; }
     if (newState === this.image.name) {
       return;
     }
